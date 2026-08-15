@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login - Palate and Prose</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header>
+  <h1>PALATE AND PROSE</h1>
+  <p>Collection of Poems and Drawings</p>
+</header>
+<nav>
+  <a class="" href="/">Home</a>
+  <a class="" href="/about.html">About</a>
+  <a class="" href="/poems.html">Poems</a>
+  <a class="" href="/drawings.html">Drawings</a>
+  <a class="" href="/contact.html">Contact</a>
+  <a href="/login.html">Login</a>
+</nav>
+<main>
+  <section class="card">
+    <h2>Admin Login</h2>
+    <p class="small">Only the administrator can add, edit or delete poems and paintings.</p>
+    <br>
+    <form id="login-form">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input id="username" name="username" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit">Login</button>
+      <div id="result"></div>
+    </form>
+  </section>
+</main>
+<script>
+document.getElementById("login-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  const res = await fetch("/api/login", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(data)
+  });
+  const out = await res.json();
+  if (res.ok) location.href = "/admin";
+  else document.getElementById("result").innerHTML = `<div class="message">${out.error}</div>`;
+});
+</script>
+<footer>© 2026 Palate and Prose</footer>
+</body>
+</html>

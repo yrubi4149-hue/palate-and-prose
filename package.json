@@ -1,0 +1,17 @@
+{
+  "name": "palate-and-prose",
+  "version": "1.0.0",
+  "description": "Palate and Prose - poetry and painting collection with an admin backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^12.11.1",
+    "express": "^4.22.2",
+    "express-session": "^1.18.1",
+    "multer": "^1.4.5-lts.1"
+  }
+}

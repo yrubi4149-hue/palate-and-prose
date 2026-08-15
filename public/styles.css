@@ -1,0 +1,212 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --dark: #4d2d2d;
+  --brown: #694b40;
+  --cream: #f7f4ef;
+  --card: #ffffff;
+  --border: #ddd4cc;
+}
+
+body {
+  font-family: Georgia, "Times New Roman", serif;
+  background: var(--cream);
+  color: #000;
+  min-height: 100vh;
+}
+
+header {
+  background: var(--dark);
+  color: #fff;
+  text-align: center;
+  padding: 40px 20px 35px;
+}
+
+header h1 {
+  font-size: clamp(26px, 5vw, 34px);
+  margin-bottom: 20px;
+  letter-spacing: 1px;
+}
+
+header p {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+nav {
+  background: var(--brown);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  padding: 14px 20px;
+  flex-wrap: wrap;
+}
+
+nav a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+nav a:hover,
+nav a.active {
+  text-decoration: underline;
+}
+
+main {
+  width: min(1100px, 100%);
+  margin: 0 auto;
+  padding: 55px 25px 70px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 30px;
+  margin-bottom: 30px;
+}
+
+h2 {
+  font-size: clamp(24px, 4vw, 30px);
+  margin-bottom: 22px;
+}
+
+h3 {
+  margin-bottom: 12px;
+}
+
+p {
+  line-height: 1.7;
+}
+
+button,
+.button {
+  background: var(--dark);
+  color: #fff;
+  border: 0;
+  padding: 11px 18px;
+  font: bold 15px Georgia, "Times New Roman", serif;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+button:hover,
+.button:hover {
+  background: #382020;
+}
+
+input,
+textarea {
+  width: 100%;
+  border: 1px solid #999;
+  padding: 10px;
+  font: 15px Georgia, "Times New Roman", serif;
+  background: #fff;
+}
+
+textarea {
+  min-height: 150px;
+  resize: vertical;
+}
+
+label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 7px;
+}
+
+.form-group {
+  margin-bottom: 18px;
+  max-width: 550px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 22px;
+}
+
+.poem-card,
+.painting-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  padding: 20px;
+}
+
+.poem-card p {
+  white-space: pre-line;
+}
+
+.painting-card img {
+  width: 100%;
+  height: 230px;
+  object-fit: cover;
+  display: block;
+  background: #eee;
+  margin-bottom: 15px;
+}
+
+.message {
+  padding: 10px 12px;
+  margin: 12px 0;
+  background: #eee7df;
+  border-left: 4px solid var(--brown);
+}
+
+footer {
+  background: var(--dark);
+  color: #fff;
+  text-align: center;
+  padding: 27px 20px;
+  font-weight: bold;
+}
+
+.small {
+  font-size: 14px;
+  opacity: .8;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+
+.danger {
+  background: #7a1f1f;
+}
+
+@media (max-width: 600px) {
+  header {
+    padding: 30px 15px;
+  }
+
+  nav {
+    gap: 14px;
+    padding: 12px;
+  }
+
+  nav a {
+    font-size: 14px;
+  }
+
+  main {
+    padding: 35px 15px 55px;
+  }
+
+  .card {
+    padding: 22px;
+  }
+
+  .painting-card img {
+    height: 210px;
+  }
+}

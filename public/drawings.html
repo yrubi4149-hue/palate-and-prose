@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painting Gallery - Palate and Prose</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header>
+  <h1>PALATE AND PROSE</h1>
+  <p>Collection of Poems and Drawings</p>
+</header>
+<nav>
+  <a class="" href="/">Home</a>
+  <a class="" href="/about.html">About</a>
+  <a class="" href="/poems.html">Poems</a>
+  <a class="active" href="/drawings.html">Drawings</a>
+  <a class="" href="/contact.html">Contact</a>
+  <a href="/login.html">Login</a>
+</nav>
+<main>
+  <section class="card">
+    <h2>Painting Gallery</h2>
+    <div id="gallery" class="grid"></div>
+    <p id="gallery-empty" class="small">No paintings have been added yet.</p>
+  </section>
+</main>
+<script>
+async function loadPaintings() {
+  const box = document.getElementById("gallery");
+  const empty = document.getElementById("gallery-empty");
+  const res = await fetch("/api/paintings");
+  const paintings = await res.json();
+  if (!paintings.length) return;
+  empty.style.display = "none";
+  box.innerHTML = paintings.map(p => `
+    <article class="painting-card">
+      <img src="${p.image}" alt="${escapeHtml(p.title)}">
+      <h3>${escapeHtml(p.title)}</h3>
+      <p class="small">Artist: ${escapeHtml(p.artist)}</p>
+    </article>
+  `).join("");
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+loadPaintings();
+</script>
+<footer>© 2026 Palate and Prose</footer>
+</body>
+</html>

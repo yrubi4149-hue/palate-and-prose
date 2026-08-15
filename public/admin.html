@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Palate and Prose</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header>
+  <h1>PALATE AND PROSE</h1>
+  <p>Collection of Poems and Drawings</p>
+</header>
+<nav>
+  <a class="" href="/">Home</a>
+  <a class="" href="/about.html">About</a>
+  <a class="" href="/poems.html">Poems</a>
+  <a class="" href="/drawings.html">Drawings</a>
+  <a class="" href="/contact.html">Contact</a>
+  <a href="/login.html">Login</a>
+</nav>
+<main id="admin-app" style="display:none;">
+  <section class="card">
+    <h2>Admin Dashboard</h2>
+    <p>Welcome, <strong id="admin-name"></strong>.</p>
+    <div class="actions">
+      <button id="logout">Logout</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Add New Poem</h2>
+    <form id="poem-form">
+      <div class="form-group">
+        <label>Poem Title</label>
+        <input name="title" required>
+      </div>
+      <div class="form-group">
+        <label>Author Name</label>
+        <input name="author" required>
+      </div>
+      <div class="form-group">
+        <label>Poem</label>
+        <textarea name="content" required></textarea>
+      </div>
+      <button>Add Poem</button>
+      <div id="poem-result"></div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Add New Painting</h2>
+    <form id="painting-form" enctype="multipart/form-data">
+      <div class="form-group">
+        <label>Painting Title</label>
+        <input name="title" required>
+      </div>
+      <div class="form-group">
+        <label>Artist Name</label>
+        <input name="artist" required>
+      </div>
+      <div class="form-group">
+        <label>Upload Image</label>
+        <input name="image" type="file" accept="image/png,image/jpeg,image/webp,image/gif" required>
+      </div>
+      <button>Upload Painting</button>
+      <div id="painting-result"></div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Manage Poems</h2>
+    <div id="manage-poems" class="grid"></div>
+  </section>
+
+  <section class="card">
+    <h2>Manage Paintings</h2>
+    <div id="manage-paintings" class="grid"></div>
+  </section>
+
+  <section class="card">
+    <h2>Contact Messages</h2>
+    <div id="messages"></div>
+  </section>
+</main>
+
+<div id="not-admin" style="display:none;">
+  <main>
+    <section class="card">
+      <h2>Admin Login Required</h2>
+      <p>You must log in as the administrator to access this page.</p>
+      <br>
+      <a class="button" href="/login.html">Go to Login</a>
+    </section>
+  </main>
+</div>
+
+<script>
+async function api(url, options = {}) {
+  const res = await fetch(url, options);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Something went wrong.");
+  return data;
+}
+
+async function init() {
+  const session = await api("/api/session");
+  if (!session.loggedIn) {
+    document.getElementById("not-admin").style.display = "block";
+    return;
+  }
+
+  document.getElementById("admin-app").style.display = "block";
+  document.getElementById("admin-name").textContent = session.username;
+
+  await refreshAll();
+}
+
+async function refreshAll() {
+  const [poems, paintings, messages] = await Promise.all([
+    api("/api/poems"),
+    api("/api/paintings"),
+    api("/api/messages")
+  ]);
+
+  document.getElementById("manage-poems").innerHTML = poems.map(p => `
+    <article class="poem-card">
+      <h3>${esc(p.title)}</h3>
+      <p class="small">By ${esc(p.author)}</p>
+      <br><p>${esc(p.content)}</p>
+      <div class="actions">
+        <button onclick="editPoem(${p.id})">Edit</button>
+        <button class="danger" onclick="deletePoem(${p.id})">Delete</button>
+      </div>
+    </article>
+  `).join("") || "<p class='small'>No poems yet.</p>";
+
+  document.getElementById("manage-paintings").innerHTML = paintings.map(p => `
+    <article class="painting-card">
+      <img src="${p.image}" alt="${esc(p.title)}">
+      <h3>${esc(p.title)}</h3>
+      <p class="small">Artist: ${esc(p.artist)}</p>
+      <div class="actions">
+        <button class="danger" onclick="deletePainting(${p.id})">Delete</button>
+      </div>
+    </article>
+  `).join("") || "<p class='small'>No paintings yet.</p>";
+
+  document.getElementById("messages").innerHTML = messages.map(m => `
+    <article class="message">
+      <strong>${esc(m.name)}</strong> — ${esc(m.email)}
+      <p>${esc(m.message)}</p>
+    </article>
+  `).join("") || "<p class='small'>No messages yet.</p>";
+}
+
+document.getElementById("poem-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const result = document.getElementById("poem-result");
+  try {
+    const data = Object.fromEntries(new FormData(e.target));
+    await api("/api/poems", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(data)
+    });
+    e.target.reset();
+    result.innerHTML = "<div class='message'>Poem added successfully.</div>";
+    refreshAll();
+  } catch (err) {
+    result.innerHTML = `<div class='message'>${esc(err.message)}</div>`;
+  }
+});
+
+document.getElementById("painting-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const result = document.getElementById("painting-result");
+  try {
+    const data = new FormData(e.target);
+    await api("/api/paintings", { method:"POST", body:data });
+    e.target.reset();
+    result.innerHTML = "<div class='message'>Painting uploaded successfully.</div>";
+    refreshAll();
+  } catch (err) {
+    result.innerHTML = `<div class='message'>${esc(err.message)}</div>`;
+  }
+});
+
+async function deletePoem(id) {
+  if (!confirm("Delete this poem?")) return;
+  await api("/api/poems/" + id, {method:"DELETE"});
+  refreshAll();
+}
+
+async function editPoem(id) {
+  const poems = await api("/api/poems");
+  const poem = poems.find(p => p.id === id);
+  if (!poem) return;
+
+  const title = prompt("Poem title:", poem.title);
+  if (title === null) return;
+  const author = prompt("Author:", poem.author);
+  if (author === null) return;
+  const content = prompt("Poem content:", poem.content);
+  if (content === null) return;
+
+  await api("/api/poems/" + id, {
+    method:"PUT",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({title, author, content})
+  });
+  refreshAll();
+}
+
+async function deletePainting(id) {
+  if (!confirm("Delete this painting?")) return;
+  await api("/api/paintings/" + id, {method:"DELETE"});
+  refreshAll();
+}
+
+document.getElementById("logout").addEventListener("click", async () => {
+  await api("/api/logout", {method:"POST"});
+  location.href = "/";
+});
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  }[c]));
+}
+
+init().catch(() => {
+  document.getElementById("not-admin").style.display = "block";
+});
+</script>
+<footer>© 2026 Palate and Prose</footer>
+</body>
+</html>

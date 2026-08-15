@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poetry Collection - Palate and Prose</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header>
+  <h1>PALATE AND PROSE</h1>
+  <p>Collection of Poems and Drawings</p>
+</header>
+<nav>
+  <a class="" href="/">Home</a>
+  <a class="" href="/about.html">About</a>
+  <a class="active" href="/poems.html">Poems</a>
+  <a class="" href="/drawings.html">Drawings</a>
+  <a class="" href="/contact.html">Contact</a>
+  <a href="/login.html">Login</a>
+</nav>
+<main>
+  <section class="card">
+    <h2>Poetry Collection</h2>
+    <div id="poems" class="grid"></div>
+    <p id="poem-empty" class="small">No poems have been added yet.</p>
+  </section>
+</main>
+<script>
+async function loadPoems() {
+  const box = document.getElementById("poems");
+  const empty = document.getElementById("poem-empty");
+  const res = await fetch("/api/poems");
+  const poems = await res.json();
+  if (!poems.length) return;
+  empty.style.display = "none";
+  box.innerHTML = poems.map(p => `
+    <article class="poem-card">
+      <h3>${escapeHtml(p.title)}</h3>
+      <p class="small">By ${escapeHtml(p.author)}</p>
+      <br>
+      <p>${escapeHtml(p.content)}</p>
+    </article>
+  `).join("");
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+loadPoems();
+</script>
+<footer>© 2026 Palate and Prose</footer>
+</body>
+</html>
