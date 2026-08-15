@@ -56,7 +56,6 @@ const existingAdmin = db.prepare("SELECT id FROM admins WHERE username = ?").get
 
 if (!existingAdmin) {
   const hash = bcrypt.hashSync(adminPassword, 12);
-
   db.prepare("INSERT INTO admins (username, password_hash) VALUES (?, ?)")
     .run(adminUsername, hash);
 
@@ -67,14 +66,13 @@ if (!existingAdmin) {
   }
 } else if (process.env.ADMIN_PASSWORD) {
   const hash = bcrypt.hashSync(adminPassword, 12);
-
   db.prepare("UPDATE admins SET password_hash = ? WHERE username = ?")
     .run(hash, adminUsername);
 
   console.log(`Admin password updated for "${adminUsername}".`);
-}  }
 }
 
+app.use(express.json());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
