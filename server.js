@@ -50,17 +50,29 @@ db.exec(`
 `);
 
 const adminUsername = process.env.ADMIN_USERNAME || "admin";
-const adminPassword = process.env.ADMIN_PASSWORD || "ChangeMe123!";
+const adminPassword = process.env.ADMIN_PASSWORD || "...........";
 
 const existingAdmin = db.prepare("SELECT id FROM admins WHERE username = ?").get(adminUsername);
+
 if (!existingAdmin) {
   const hash = bcrypt.hashSync(adminPassword, 12);
+
   db.prepare("INSERT INTO admins (username, password_hash) VALUES (?, ?)")
     .run(adminUsername, hash);
+
   console.log(`Admin account created for username "${adminUsername}".`);
+
   if (!process.env.ADMIN_PASSWORD) {
     console.log("IMPORTANT: Change the default password using ADMIN_PASSWORD before deploying.");
   }
+} else if (process.env.ADMIN_PASSWORD) {
+  const hash = bcrypt.hashSync(adminPassword, 12);
+
+  db.prepare("UPDATE admins SET password_hash = ? WHERE username = ?")
+    .run(hash, adminUsername);
+
+  console.log(`Admin password updated for "${adminUsername}".`);
+}  }
 }
 
 app.use(express.json());
