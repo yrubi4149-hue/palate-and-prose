@@ -80,14 +80,14 @@ app.use(session({
   secret: process.env.SESSION_SECRET || "change-this-session-secret",
   resave: false,
   saveUninitialized: false,
+  proxy: true,
   cookie: {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
     maxAge: 1000 * 60 * 60 * 4
   }
 }));
-
 app.use(express.static(path.join(ROOT, "public")));
 app.use("/uploads", express.static(UPLOAD_DIR));
 
