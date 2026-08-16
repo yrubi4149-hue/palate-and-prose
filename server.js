@@ -24,14 +24,14 @@ db.exec(`
     password_hash TEXT NOT NULL
   );
 
-  CREATE TABLE IF NOT EXISTS poems (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    author TEXT NOT NULL,
-    content TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-  );
-
+ CREATE TABLE IF NOT EXISTS poems (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  author TEXT NOT NULL,
+  content TEXT NOT NULL,
+  image TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
   CREATE TABLE IF NOT EXISTS paintings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
@@ -47,7 +47,14 @@ db.exec(`
     message TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
-`);
+`);try {
+  db.prepare("ALTER TABLE poems ADD COLUMN image TEXT").run();
+  console.log("Poem image column added.");
+} catch (err) {
+  if (!err.message.includes("duplicate column name")) {
+    throw err;
+  }
+}
 
 const adminUsername = process.env.ADMIN_USERNAME || "admin";
 const adminPassword = process.env.ADMIN_PASSWORD || "...........";
@@ -159,20 +166,55 @@ app.get("/api/paintings", (_req, res) => {
 
 // Admin poem management
 app.post("/api/poems", requireAdmin, (req, res) => {
-  const { title, author, content } = req.body;
+  const { title, author, content, poemImage } = req.body;
+
   if (!title || !author || !content) {
-    return res.status(400).json({ error: "Title, author and poem content are required." });
+    return res.status(400).json({
+      error: "Title, author and poem content are required."
+    });
+  }
+
+  let image = null;
+
+  // Save pasted poem image
+  if (poemImage) {
+    const match = poemImage.match(/^data:image\/(png|jpeg|jpg|webp|gif);base64,(.+)$/);
+
+    if (!match) {
+      return res.status(400).json({
+        error: "Invalid poem image."
+      });
+    }
+
+    const extension = match[1] === "jpeg" || match[1] === "jpg"
+      ? "jpg"
+      : match[1];
+
+    const filename = `${Date.now()}-poem.${extension}`;
+    const filePath = path.join(UPLOAD_DIR, filename);
+
+    fs.writeFileSync(
+      filePath,
+      Buffer.from(match[2], "base64")
+    );
+
+    image = `/uploads/${filename}`;
   }
 
   const result = db.prepare(
-    "INSERT INTO poems (title, author, content) VALUES (?, ?, ?)"
-  ).run(title.trim(), author.trim(), content.trim());
+    "INSERT INTO poems (title, author, content, image) VALUES (?, ?, ?, ?)"
+  ).run(
+    title.trim(),
+    author.trim(),
+    content.trim(),
+    image
+  );
 
   res.status(201).json(
-    db.prepare("SELECT * FROM poems WHERE id = ?").get(result.lastInsertRowid)
+    db.prepare("SELECT * FROM poems WHERE id = ?")
+      .get(result.lastInsertRowid)
   );
 });
-
 app.put("/api/poems/:id", requireAdmin, (req, res) => {
   const { title, author, content } = req.body;
   const id = Number(req.params.id);
@@ -245,6 +287,13 @@ app.get("/api/messages", requireAdmin, (_req, res) => {
   res.json(db.prepare("SELECT * FROM messages ORDER BY id DESC").all());
 });
 
+app.get("/admin", (_req, res) => {
+  res.sendFile(path.join(ROOT, "public", "admin.html"));
+});
+
+app.listen(PORT, () => {
+  console.log(`Palate and Prose is running at http://localhost:${PORT}`);
+});
 app.get("/admin", (_req, res) => {
   res.sendFile(path.join(ROOT, "public", "admin.html"));
 });
