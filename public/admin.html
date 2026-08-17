@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Palate and Prose</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header>
+  <h1>PALATE AND PROSE</h1>
+  <p>Collection of Poems and Drawings</p>
+</header>
+<nav>
+  <a class="" href="/">Home</a>
+  <a class="" href="/about.html">About</a>
+  <a class="" href="/poems.html">Poems</a>
+  <a class="" href="/drawings.html">Drawings</a>
+  <a class="" href="/contact.html">Contact</a>
+  <a href="/login.html">Login</a>
+</nav>
+<main id="admin-app" style="display:none;">
+  <section class="card">
+    <h2>Admin Dashboard</h2>
+    <p>Welcome, <strong id="admin-name"></strong>.</p>
+    <div class="actions">
+      <button id="logout">Logout</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Add New Poem</h2>
+    <form id="poem-form">
+      <div class="form-group">
+        <label>Poem Title</label>
+        <input name="title" required>
+      </div>
+      <div class="form-group">
+        <label>Author Name</label>
+        <input name="author" required>
+      </div>
+      <div class="form-group">
+  <label>Poem Text</label>
+  <textarea name="content" placeholder="Type or paste your poem here..." required></textarea>
+</div>
+
+<div class="form-group">
+  <label>Poem Picture (optional)</label>
+  <input
+    type="file"
+    id="poem-image-file"
+    accept="image/png,image/jpeg,image/webp,image/gif"
+  >
+  <p class="small">You can also paste a copied poem picture below.</p>
+</div>
+
+<div class="form-group">
+  <label>Paste Poem Picture</label>
+  <div
+    id="poem-image-paste"
+    contenteditable="true"
+    style="min-height:100px; border:1px solid #999; padding:15px; background:white;"
+  >
+    Click here and paste your poem picture with Ctrl+V
+  </div>
+</div>
+      <button>Add Poem</button>
+      <div id="poem-result"></div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Add New Painting</h2>
+    <form id="painting-form" enctype="multipart/form-data">
+      <div class="form-group">
+        <label>Painting Title</label>
+        <input name="title" required>
+      </div>
+      <div class="form-group">
+        <label>Artist Name</label>
+        <input name="artist" required>
+      </div>
+      <div class="form-group">
+        <label>Upload Image</label>
+        <input name="image" type="file" accept="image/png,image/jpeg,image/webp,image/gif" required>
+      </div>
+      <button>Upload Painting</button>
+      <div id="painting-result"></div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Manage Poems</h2>
+    <div id="manage-poems" class="grid"></div>
+  </section>
+
+  <section class="card">
+    <h2>Manage Paintings</h2>
+    <div id="manage-paintings" class="grid"></div>
+  </section>
+
+  <section class="card">
+    <h2>Contact Messages</h2>
+    <div id="messages"></div>
+  </section>
+</main>
+
+<div id="not-admin" style="display:none;">
+  <main>
+    <section class="card">
+      <h2>Admin Login Required</h2>
+      <p>You must log in as the administrator to access this page.</p>
+      <br>
+      <a class="button" href="/login.html">Go to Login</a>
+    </section>
+  </main>
+</div>
+
+<script>
+async function api(url, options = {}) {
+  const res = await fetch(url, options);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Something went wrong.");
+  return data;
+}
+
+let pastedPoemImage = null;
+
+async function init() {
+  const session = await api("/api/session");
+
+  if (!session.loggedIn) {
+    document.getElementById("not-admin").style.display = "block";
+    return;
+  }
+
+  document.getElementById("admin-app").style.display = "block";
+  document.getElementById("admin-name").textContent = session.username;
+
+  await refreshAll();
+}
+
+async function refreshAll() {
+  const [poems, paintings, messages] = await Promise.all([
+    api("/api/poems"),
+    api("/api/paintings"),
+    api("/api/messages")
+  ]);
+
+  document.getElementById("manage-poems").innerHTML = poems.map(p => `
+    <article class="poem-card">
+      <h3>${esc(p.title)}</h3>
+      <p class="small">By ${esc(p.author)}</p>
+      <br>
+      <p>${esc(p.content)}</p>
+
+      ${p.image ? `
+        <img
+          src="${p.image}"
+          alt="${esc(p.title)}"
+          style="width:100%; max-width:700px; margin-top:15px; display:block;"
+        >
+      ` : ""}
+
+      <div class="actions">
+        <button onclick="editPoem(${p.id})">Edit</button>
+        <button class="danger" onclick="deletePoem(${p.id})">Delete</button>
+      </div>
+    </article>
+  `).join("") || "<p class='small'>No poems yet.</p>";
+
+  document.getElementById("manage-paintings").innerHTML = paintings.map(p => `
+    <article class="painting-card">
+      <img src="${p.image}" alt="${esc(p.title)}">
+      <h3>${esc(p.title)}</h3>
+      <p class="small">Artist: ${esc(p.artist)}</p>
+      <div class="actions">
+        <button class="danger" onclick="deletePainting(${p.id})">Delete</button>
+      </div>
+    </article>
+  `).join("") || "<p class='small'>No paintings yet.</p>";
+
+  document.getElementById("messages").innerHTML = messages.map(m => `
+    <article class="message">
+      <strong>${esc(m.name)}</strong> — ${esc(m.email)}
+      <p>${esc(m.message)}</p>
+    </article>
+  `).join("") || "<p class='small'>No messages yet.</p>";
+}
+
+/* Paste an image with Ctrl+V into the poem picture box */
+document.getElementById("poem-image-paste").addEventListener("paste", event => {
+  const items = event.clipboardData && event.clipboardData.items;
+  if (!items) return;
+
+  for (const item of items) {
+    if (item.type.startsWith("image/")) {
+      event.preventDefault();
+
+      const file = item.getAsFile();
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        pastedPoemImage = e.target.result;
+
+        document.getElementById("poem-image-paste").innerHTML = `
+          <img
+            src="${pastedPoemImage}"
+            alt="Pasted poem"
+            style="max-width:100%; max-height:400px; display:block; margin:auto;"
+          >
+        `;
+      };
+
+      reader.readAsDataURL(file);
+      return;
+    }
+  }
+});
+
+/* Add poem */
+document.getElementById("poem-form").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const form = event.target;
+  const result = document.getElementById("poem-result");
+
+  try {
+    const data = {
+      title: form.elements.title.value,
+      author: form.elements.author.value,
+      content: form.elements.content.value
+    };
+
+    /* If a picture was selected from the computer */
+    const imageFile = document.getElementById("poem-image-file").files[0];
+
+    if (imageFile) {
+      data.poemImage = await fileToDataURL(imageFile);
+    }
+
+    /* If a picture was pasted with Ctrl+V */
+    if (pastedPoemImage) {
+      data.poemImage = pastedPoemImage;
+    }
+
+    await api("/api/poems", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
+    });
+
+    form.reset();
+    pastedPoemImage = null;
+
+    document.getElementById("poem-image-paste").innerHTML =
+      "Click here and paste your poem picture with Ctrl+V";
+
+    result.innerHTML =
+      "<div class='message'>Poem added successfully.</div>";
+
+    await refreshAll();
+
+  } catch (err) {
+    result.innerHTML =
+      `<div class='message'>${esc(err.message)}</div>`;
+  }
+});
+
+function fileToDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Could not read the image."));
+
+    reader.readAsDataURL(file);
+  });
+}
+
+/* Upload painting */
+document.getElementById("painting-form").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const result = document.getElementById("painting-result");
+
+  try {
+    const data = new FormData(event.target);
+
+    await api("/api/paintings", {
+      method: "POST",
+      body: data
+    });
+
+    event.target.reset();
+
+    result.innerHTML =
+      "<div class='message'>Painting uploaded successfully.</div>";
+
+    await refreshAll();
+
+  } catch (err) {
+    result.innerHTML =
+      `<div class='message'>${esc(err.message)}</div>`;
+  }
+});
+
+async function deletePoem(id) {
+  if (!confirm("Delete this poem?")) return;
+
+  try {
+    await api("/api/poems/" + id, { method: "DELETE" });
+    await refreshAll();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function editPoem(id) {
+  try {
+    const poems = await api("/api/poems");
+    const poem = poems.find(p => p.id === id);
+
+    if (!poem) return;
+
+    const title = prompt("Poem title:", poem.title);
+    if (title === null) return;
+
+    const author = prompt("Author:", poem.author);
+    if (author === null) return;
+
+    const content = prompt("Poem content:", poem.content);
+    if (content === null) return;
+
+    await api("/api/poems/" + id, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        title,
+        author,
+        content
+      })
+    });
+
+    await refreshAll();
+
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function deletePainting(id) {
+  if (!confirm("Delete this painting?")) return;
+
+  try {
+    await api("/api/paintings/" + id, { method: "DELETE" });
+    await refreshAll();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+document.getElementById("logout").addEventListener("click", async () => {
+  await api("/api/logout", { method: "POST" });
+  location.href = "/";
+});
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  }[c]));
+}
+
+init().catch(err => {
+  console.error(err);
+  document.getElementById("not-admin").style.display = "block";
+});
+</script>
+<footer>© 2026 Palate and Prose</footer>
+</body>
+</html>
