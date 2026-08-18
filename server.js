@@ -294,10 +294,3 @@ app.get("/admin", (_req, res) => {
 app.listen(PORT, () => {
   console.log(`Palate and Prose is running at http://localhost:${PORT}`);
 });
-app.get("/admin", (_req, res) => {
-  res.sendFile(path.join(ROOT, "public", "admin.html"));
-});
-
-app.listen(PORT, () => {
-  console.log(`Palate and Prose is running at http://localhost:${PORT}`);
-});
